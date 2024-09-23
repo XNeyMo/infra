@@ -1,0 +1,4 @@
+---
+http_host: "example.com"
+http_conf: "example.com.conf"
+http_port: "80"

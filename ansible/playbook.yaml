@@ -1,0 +1,50 @@
+---
+- name: Install Nginx Server
+  hosts: all
+  remote_user: ubuntu
+  become: yes
+  vars_files:
+   - ansible_vars.yaml
+  tasks: 
+  - name: Install Nginx and PHP Packages
+    apt: name={{ item }} update_cache=yes state=latest
+    loop: [ 'nginx', 'php-fpm' ]
+    
+  - name: Make sure Nginx service is running
+    systemd:
+      state: started
+      name: nginx
+      
+  - name: Sets Nginx conf file
+    template:
+      src: "nginx.conf.j2"
+      dest: "/etc/nginx/sites-available/{{ http_conf }}"
+
+  - name: Enables new site
+    file:
+      src: "/etc/nginx/sites-available/{{ http_conf }}"
+      dest: "/etc/nginx/sites-enabled/{{ http_conf }}"
+      state: link
+    notify: Reload Nginx
+  
+  - name: Removes "default" site
+    file:
+      path: "/etc/nginx/sites-enabled/default"
+      state: absent
+    notify: Restart Nginx
+     
+  - name: Sets Up PHP Info Page
+    template:
+      src: "test.php"
+      dest: "/var/www/html/test.php"
+
+  handlers:
+    - name: Reload Nginx
+      service:
+        name: nginx
+        state: reloaded
+
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
